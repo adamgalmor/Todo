@@ -1,98 +1,132 @@
+
 package il.ac.shenkar.mobile;
 
+import il.ac.shenkar.mobile.TaskModel.Task;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class ListActivity extends Activity {
 
+    class TaskAdapter extends BaseAdapter {
+        Context context;
+        LayoutInflater inflater;
 
-	class TaskAdapter extends BaseAdapter {
-		Context context;
-		ArrayList<Object> data = null;
+        public TaskAdapter(Context context, ArrayList<Object> data) {
+            super();
+            this.context = context;
+            this.inflater = ((Activity) context).getLayoutInflater();
+        }
 
-		public TaskAdapter(Context context, ArrayList<Object> data) {
-			super();
-			this.context = context;
-			this.data = data == null ? new ArrayList<Object>() : data;
-		}
+        @Override
+        public View getView(final int pos, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                final Task t = TaskModel.getInstance().tasks.get(pos);
 
-		@Override
-		public View getView(int pos, View convertView, ViewGroup parent) {
-			if (convertView == null) {
-				View item = ((Activity) context).getLayoutInflater().inflate(
-						R.layout.list_view_item, parent, false);
-				TextView txt = (TextView) item.findViewById(R.id.textView1);
-				txt.setText((String) data.get(pos));
-				return item;
-			} else {
-				TextView txt = (TextView) convertView
-						.findViewById(R.id.textView1);
-				txt.setText((String) data.get(pos));
-				return convertView;
-			}
-		}
+                View item = inflater.inflate(R.layout.list_view_item, parent, false);
 
-		@Override
-		public int getCount() {
-			return data.size();
-		}
+                ((Button) item.findViewById(R.id.DoneBtn))
+                        .setOnClickListener(new OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                TaskModel.getInstance().tasks.remove(pos);
+                                notifyDataSetChanged();
+                            }
+                        });
 
-		@Override
-		public Object getItem(int arg0) {
-			return data.get(arg0);
-		}
+                ((TextView) item.findViewById(R.id.textView1)).setText(t.text);
+                ((TextView) item.findViewById(R.id.textView2))
+                        .setText(new SimpleDateFormat("dd/MM/yyyy hh:mm:ss",
+                                Locale.getDefault()).format(t.timestamp));
+                item.setTag(t);
+                return item;
+            } else {
+                Task t = TaskModel.getInstance().tasks.get(pos);
+                ((TextView) convertView.findViewById(R.id.textView1))
+                        .setText(t.text);
+                ((TextView) convertView.findViewById(R.id.textView2))
+                        .setText(new SimpleDateFormat("dd/MM/yyyy hh:mm:ss",
+                                Locale.getDefault()).format(t.timestamp));
+                convertView.setTag(t);
+                return convertView;
+            }
+        }
 
-		@Override
-		public long getItemId(int arg0) {
-			return arg0;
-		}
+        @Override
+        public int getCount() {
+            return TaskModel.getInstance().tasks.size();
+        }
 
-	}
+        @Override
+        public Object getItem(int pos) {
+            return TaskModel.getInstance().tasks.get(pos);
+        }
 
-	private ListView listView1;
-	private TaskAdapter adapter;
+        @Override
+        public long getItemId(int pos) {
+            return pos;
+        }
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_list);
+    }
 
-		adapter = new TaskAdapter(this, null);
-		assert (adapter.data != null);
-		for (int i = 0; i < 20; i++) {
-			adapter.data.add("Item" + i);
-		}
+    private ListView listView1;
+    private TaskAdapter adapter;
 
-		listView1 = (ListView) findViewById(R.id.listView1);
-		listView1.addHeaderView(getLayoutInflater().inflate(
-				R.layout.list_view_header, listView1, false));
-		listView1.setAdapter(adapter);
-		
-		findViewById(R.id.button1).setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-                Intent taskIntent = new Intent(v.getContext(), TaskActivity.class);
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_list);
+
+        adapter = new TaskAdapter(this, null);
+        if (adapter.isEmpty())
+            for (int i = 0; i < 3; i++) {
+                Task t = new Task();
+                t.text = "Item" + i;
+                TaskModel.getInstance().tasks.add(t);
+            }
+
+        listView1 = (ListView) findViewById(R.id.listView1);
+        listView1.addHeaderView(getLayoutInflater().inflate(
+                R.layout.list_view_header, listView1, false));
+        listView1.setAdapter(adapter);
+
+        findViewById(R.id.AddTaskBtn).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent taskIntent = new Intent(v.getContext(),
+                        TaskActivity.class);
                 startActivityForResult(taskIntent, 0);
-			}
-		});
-		
-	}
+            }
+        });
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.activity_list, menu);
-		return true;
-	}
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == Activity.RESULT_OK) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_list, menu);
+        return true;
+    }
 }
