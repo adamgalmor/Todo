@@ -10,6 +10,8 @@ import java.util.Locale;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -20,6 +22,7 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ListActivity extends Activity {
 
@@ -43,9 +46,16 @@ public class ListActivity extends Activity {
                 ((Button) item.findViewById(R.id.DoneBtn))
                         .setOnClickListener(new OnClickListener() {
                             @Override
-                            public void onClick(View v) {
+                            public void onClick(View v) {                                
+                                TasksOpenHelper db_helper = new TasksOpenHelper(v.getContext());
+                                SQLiteDatabase db = db_helper.getWritableDatabase();
+                                db.delete(TasksOpenHelper.TABLE_NAME, "id = ?", new String[] {
+                                    String.valueOf(t.id)
+                                });
+                                db.close();
                                 TaskModel.getInstance().tasks.remove(pos);
                                 notifyDataSetChanged();
+                                Toast.makeText(getBaseContext(), "Task Removed", Toast.LENGTH_SHORT).show();
                             }
                         });
 
@@ -92,13 +102,28 @@ public class ListActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list);
 
-        adapter = new TaskAdapter(this, null);
-        if (adapter.isEmpty())
-            for (int i = 0; i < 3; i++) {
+        TasksOpenHelper db_helper = new TasksOpenHelper(this);
+        SQLiteDatabase db = db_helper.getReadableDatabase();
+        // Cursor cur = db.rawQuery("SELECT * FROM " +
+        // TasksOpenHelper.TABLE_NAME, null);
+        Cursor cur = db.query(false, TasksOpenHelper.TABLE_NAME, null, null, null, null, null,
+                null, null);
+        if (cur != null && cur.moveToFirst())
+            do {
                 Task t = new Task();
-                t.text = "Item" + i;
+                t.id = cur.getInt(0);
+                t.text = cur.getString(1);
+                t.timestamp = cur.getLong(2);
                 TaskModel.getInstance().tasks.add(t);
-            }
+            } while (cur.moveToNext());
+
+        adapter = new TaskAdapter(this, null);
+        // if (adapter.isEmpty())
+        // for (int i = 0; i < 3; i++) {
+        // Task t = new Task();
+        // t.text = "Item" + i;
+        // TaskModel.getInstance().tasks.add(t);
+        // }
 
         listView1 = (ListView) findViewById(R.id.listView1);
         listView1.addHeaderView(getLayoutInflater().inflate(
@@ -116,6 +141,12 @@ public class ListActivity extends Activity {
 
     }
 
+    @Override
+    protected void onDestroy() {
+        TaskModel.getInstance().tasks.clear();
+        super.onDestroy();
+    }
+    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

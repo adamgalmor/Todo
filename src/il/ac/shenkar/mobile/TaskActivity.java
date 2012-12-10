@@ -9,7 +9,10 @@ import java.util.Comparator;
 import java.util.Locale;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
@@ -53,6 +56,15 @@ public class TaskActivity extends Activity {
                                 return (int) (arg0.timestamp - arg1.timestamp);
                             }
                         });
+
+                TasksOpenHelper db_helper = new TasksOpenHelper(getBaseContext());
+                SQLiteDatabase db = db_helper.getWritableDatabase();
+                ContentValues values = new ContentValues();
+//                values.put("id", t.id);
+                values.put("text", t.text);
+                values.put("timestamp", t.timestamp);
+                db.insert(TasksOpenHelper.DB_NAME, null, values);
+                db.close();
 
                 Intent intent = new Intent();
                 if (getParent() == null) {

@@ -6,8 +6,9 @@ import java.util.Date;
 
 public class TaskModel {
     public static class Task {
-        static private int nextID = 0;
-        int id = nextID++;
+//        static private int nextID = 0;
+//        int id = nextID++;
+        int id = 0;
         long timestamp = new Date().getTime();
         String text = "";
     }
